@@ -55,7 +55,6 @@ def query_chroma(query, top_k=3):
         doc for doc, dist in zip(results["documents"][0], results["distances"][0])
         if dist < threshold
     ]
-
     return filtered_docs or [''] # List of top_k chunks
 
 def get_context(query):
@@ -119,10 +118,9 @@ def upload_pdf():
 
 @app.route('/reset-pdf-embeddings', methods=['DELETE'])
 def reset_pdf_embeddings():
-    collection = client.get_or_create_collection(name="pdf_embeddings")
-    # Delete all embeddings from the collection
-    collection.delete()
-    return jsonify({'success': 'deleted all the embeddings successfully'})
+    client.delete_collection("pdf_embeddings")
+    client.get_or_create_collection(name="pdf_embeddings")
+    return jsonify({'success': 'deleted all the embedding collection successfully'})
 
 @app.route('/query-agent', methods=['GET'])
 def query_agent():
