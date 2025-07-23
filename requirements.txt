@@ -1,0 +1,4 @@
+chromadb==1.0.15
+fitz==0.0.1.dev2
+Flask==3.1.1
+Requests==2.32.4
