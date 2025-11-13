@@ -8,7 +8,6 @@ import chromadb
 
 
 client = chromadb.PersistentClient(path="./chroma_storage")
-collection = client.get_or_create_collection(name="pdf_embeddings")
 app = Flask(__name__)
 
 OLLAMA_EMBED_MODEL = "nomic-embed-text"  # Or your preferred embedding model
@@ -34,6 +33,8 @@ def get_embedding_from_ollama(text, model=OLLAMA_EMBED_MODEL):
         raise Exception(f"Ollama error: {response.status_code}, {response.text}")
 
 def add_embedding_to_chroma(text_chunk, embedding):
+    collection = client.get_or_create_collection(name="pdf_embeddings")
+
     collection.add(
         documents=[text_chunk],
         embeddings=[embedding],
@@ -42,6 +43,7 @@ def add_embedding_to_chroma(text_chunk, embedding):
 
 def query_chroma(query, top_k=3):
     query_embedding = get_embedding_from_ollama(query)
+    collection = client.get_or_create_collection(name="pdf_embeddings")
 
     results = collection.query(
         query_embeddings=[query_embedding],
@@ -49,13 +51,7 @@ def query_chroma(query, top_k=3):
         include=["documents", "distances"]
     )
 
-    # Filter out results with poor similarity
-    threshold = 300
-    filtered_docs = [
-        doc for doc, dist in zip(results["documents"][0], results["distances"][0])
-        if dist < threshold
-    ]
-    return filtered_docs or [''] # List of top_k chunks
+    return results['documents'][0] or [''] # List of top_k chunks
 
 def get_context(query):
     context_chunks = query_chroma(query)
@@ -77,11 +73,11 @@ def generate_answer(query):
 
     response = requests.post(
         "http://localhost:11434/api/generate",
-        json={"model": "aya-expanse:8b", "prompt": prompt, "stream": False}
+        json={"model": "qwen2.5-coder:latest", "prompt": prompt, "stream": False}
     )
     return response.json()["response"]
 
-def split_text_into_chunks(text, max_tokens=500):
+def split_text_into_chunks(text, max_tokens=1000):
     import textwrap
     return textwrap.wrap(text, max_tokens)
 
